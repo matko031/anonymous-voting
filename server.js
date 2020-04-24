@@ -8,14 +8,24 @@ const passport = require('passport');
 const initializePassport = require('./passport-config');
 initializePassport(passport);
 
-const codes_file = fs.readFileSync('codes', 'utf8');
-const lines = codes_file.split('\n');
 
-const electorate = {}
-lines.forEach( (line) => {  
-	temp = line.split(',');
-	electorate[temp[1]] = temp[0];
-})
+
+const getElectorate = (next) => {
+    const codes_file = fs.readFile('codes', 'utf8', (err, data) => {
+        const electorate = {};
+        const lines = data.split('\n').filter( (elem) => elem != '' );
+        lines.forEach( (line) => {  
+            temp = line.split(',');
+            electorate[temp[1]] = temp[0];
+        })
+        next(electorate);
+    });
+};
+
+
+let electorate = {};
+getElectorate( (elect) => { electorate = elect} );
+
 
 	
 
@@ -108,6 +118,8 @@ const getAllVotesForPosition = (position, nextStep) => {
 
 
 
+
+
 app.get("/", (req, res) => { 
     getCandidatesForPosition (currentVoting, (candidates) => {
         res.render("index", {name: currentVoting, candidates : candidates});
@@ -168,14 +180,14 @@ app.post("/adminlogin", passport.authenticate('local', {
 
 
 app.get("/dashboard", (req, res) => {
-//	if (req.user === "matko"){
+	if (req.user === "matko"){
 
         getAllPositions( (allPositions) => {
             res.render("dashboard", {candidates:allPositions});
         });
-//	} else{
-//		res.redirect("/");
-//	}
+	} else{
+		res.redirect("/");
+	}
 
 })
 
@@ -192,18 +204,16 @@ app.post("/addCandidate", (req, res) => {
 
 
 app.post("/changeCurrentVoting", (req, res) => {
-	//if (req.user === "matko"){
+    if (req.user === "matko"){
         if('currentVoting' in req.body){
             currentVoting = req.body.currentVoting;
         }
-        res.redirect("/dashboard");
-   // } else {
-   //     res.redirect("/");
-   // }
+    }
+    res.redirect("/");
 });
 
 app.get("/results", (req, res) => {
-
+    console.log(electorate);
     results  = [];
     getAllPositions((positions) => {
         positionsProcessed = 0;
@@ -211,7 +221,20 @@ app.get("/results", (req, res) => {
             getAllVotedForPosition(position, (voted) => {
                 getAllVotesForPosition(position, (votes) => {
                     positionsProcessed++;
-                    results.push( {position: position, voted: voted, votes:votes} );
+                    
+                    votes_result = {};
+                    votes.forEach( (vote) => {
+                        if (! (vote in votes_result)){
+                            votes_result[vote] = 1; 
+                        } else {
+                            votes_result[vote] += 1; 
+                        } 
+                    });
+                    
+                    votes_numbers = Object.keys(votes_result).map( (key) => { return {name: key, number:votes_result[key]} })
+                    let toPush = {position: position, voted: voted, votes:votes_numbers} ;
+                    results.push(toPush);
+                     
                     if (positionsProcessed === array.length){
                         res.render("results", {results: results}); 
                     }

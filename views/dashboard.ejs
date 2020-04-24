@@ -2,11 +2,30 @@
 <div class="container">
      <form action="/addCandidate" method="post">
         <div class = "form-group">
-            <% candidates.forEach(function(position) { %>
-                <label for="<%= position%>"> <b> Add a <%= position %> candidate </b> </label>
-                <input type="text" name="<%= position.name %>" class="form-control"> 
-                <br>	
-            <% }); %>
+            <label for="president"> <b> Add a president candidate </b> </label>
+            <input type="text" name="president" class="form-control"> 
+            <br>	
+
+            <label for="secretary"> <b> Add a secretary candidate </b> </label>
+            <input type="text" name="secretary" class="form-control"> 
+            <br>	
+
+            <label for="treasurer"> <b> Add a treasurer candidate </b> </label>
+            <input type="text" name="treasurer" class="form-control"> 
+            <br>	
+
+            <label for="vpcr"> <b> Add a vpcr candidate </b> </label>
+            <input type="text" name="vpcr" class="form-control"> 
+            <br>	
+
+            <label for="vphr"> <b> Add a vphr candidate </b> </label>
+            <input type="text" name="vphr" class="form-control"> 
+            <br>	
+
+            <label for="vppr"> <b> Add a vppr candidate </b> </label>
+            <input type="text" name="vppr" class="form-control"> 
+            <br>	
+
         </div>
         <button type="submit" class="btn btn-primary" >Submit</button>
     </form> 

@@ -1,21 +1,21 @@
 <%- include('includes/header') %>
-    <% results.forEach(function(position) { %>
+
+    <% results.forEach( (position) => { %>
 
         <b> Position: </b> <%= position.position %> 
         <br>
-        <b> People who voted </b>
+        <b> People who voted: </b>
         <% position.voted.forEach((vote) => { %>
             <%=  vote  %>, 
         <% });%>
         <br>
         <b> Votes </b>
-        <% position.votes.forEach((vote) => { %>
-            <%=  vote  %>, 
-        <% });%>
         <br>
+        <% position.votes.forEach( (vote_number) => { %>
+            <b> <%=  vote_number.name  %>: </b> <%= vote_number.number %> 
+        <% });%>
         <br>
         <br>
 
     <% });%>
-
 <%- include('includes/header') %>

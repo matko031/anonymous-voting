@@ -2,11 +2,7 @@
     <div class = "container">
         <form action="/vote" method="POST">
         <div class = "form-group">
-            <label for="position">Cast your vote</label>
-            <br>
-
-                <%= name %>
-                <br>
+            <label for="position"> <b>Your vote for <%= name %></b> </label>
                 <select id="vote" name="vote" class="form-control"  >
                 <% candidates.forEach( (candidate) => { %>
                     <option value="<%= candidate %>"> <%= candidate %> </option>
@@ -24,5 +20,8 @@
                 <button type="submit" class="btn btn-primary"> Send </button>
         </div>
         </form>
+                <a href="/results"><button class="btn btn-info"> Results </button> </a>
+                <a href="/adminlogin"><button class="btn btn-secondary"> Admin login</button> </a>
+                <a href="/dashboard"><button class="btn btn-warning"> Dashboard </button> </a>
     </div>
 
