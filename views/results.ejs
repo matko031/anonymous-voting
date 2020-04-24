@@ -1,0 +1,21 @@
+<%- include('includes/header') %>
+    <% results.forEach(function(position) { %>
+
+        <b> Position: </b> <%= position.position %> 
+        <br>
+        <b> People who voted </b>
+        <% position.voted.forEach((vote) => { %>
+            <%=  vote  %>, 
+        <% });%>
+        <br>
+        <b> Votes </b>
+        <% position.votes.forEach((vote) => { %>
+            <%=  vote  %>, 
+        <% });%>
+        <br>
+        <br>
+        <br>
+
+    <% });%>
+
+<%- include('includes/header') %>

@@ -1,11 +1,28 @@
-<html>
-    <form action="/analyse" method="POST">
-        Your code
-        <input type="text" name="code">
+<%- include('includes/header') %>
+    <div class = "container">
+        <form action="/vote" method="POST">
+        <div class = "form-group">
+            <label for="position">Cast your vote</label>
+            <br>
 
-        Your votes
-        <input type="text" name="vote">
+                <%= name %>
+                <br>
+                <select id="vote" name="vote" class="form-control"  >
+                <% candidates.forEach( (candidate) => { %>
+                    <option value="<%= candidate %>"> <%= candidate %> </option>
+                <% }); %>
+                <option value="blank"> Blank </option>
+                </select>
+                <br>
+        </div>
+        <div class = "form-group">
+                <label for="code">Your code</label>
+                <input type="text" name="code" class="form-control">
+        </div>
+        <input type="hidden" name="position" value="<%= name %>" >
+        <div class="form-group">
+                <button type="submit" class="btn btn-primary"> Send </button>
+        </div>
+        </form>
+    </div>
 
-        <button type="submit"> Send </button>
-    </form>
-</html>

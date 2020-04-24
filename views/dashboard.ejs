@@ -1,0 +1,31 @@
+<%- include('includes/header') %>
+<div class="container">
+     <form action="/addCandidate" method="post">
+        <div class = "form-group">
+            <% candidates.forEach(function(position) { %>
+                <label for="<%= position%>"> <b> Add a <%= position %> candidate </b> </label>
+                <input type="text" name="<%= position.name %>" class="form-control"> 
+                <br>	
+            <% }); %>
+        </div>
+        <button type="submit" class="btn btn-primary" >Submit</button>
+    </form> 
+
+    <br>
+    <br>
+
+    <form action="/changeCurrentVoting" method="post">
+        <div class = "form-group">
+            <label for="currentVoting"> <b>Choose current voting position:</b></label>
+            <select class = "form-control" id="currentVoting" name = "currentVoting">
+                <% candidates.forEach(function(position) { %>
+                    <option value="<%= position %>" > <%= position%> </option>
+                    <br>
+                <% }); %>
+            </select> 
+            <br>
+            <button type="submit" class="btn btn-primary"> Submit </button>
+        <div>
+    </form>
+</div>
+<%- include('includes/header') %>
