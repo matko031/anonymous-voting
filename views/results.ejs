@@ -1,21 +1,17 @@
 <%- include('includes/header') %>
 
-    <% results.forEach( (position) => { %>
+    <% Object.keys(results).forEach( (question) => { %>
 
-        <b> Position: </b> <%= position.position %> 
+        <b>Question: </b>
         <br>
-        <b> People who voted: </b>
-        <% position.voted.forEach((vote) => { %>
-            <%=  vote  %>, 
-        <% });%>
+        <%= question %>
         <br>
-        <b> Votes </b>
-        <br>
-        <% position.votes.forEach( (vote_number) => { %>
-            <b> <%=  vote_number.name  %>: </b> <%= vote_number.number %> 
-        <% });%>
-        <br>
-        <br>
+        <% Object.keys(results[question]).forEach( (answer) => { %>
+            <%= answer %>: <%= results[question][answer] %>
+            <br>
 
+        <%});%>
+        <br>
+        <br>
     <% });%>
 <%- include('includes/header') %>

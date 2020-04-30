@@ -1,44 +1,12 @@
 <%- include('includes/header') %>
 <div class="container">
-     <form action="/addCandidate" method="post">
-        <div class = "form-group">
-            <label for="president"> <b> Add a president candidate </b> </label>
-            <input type="text" name="president" class="form-control"> 
-            <br>	
-
-            <label for="secretary"> <b> Add a secretary candidate </b> </label>
-            <input type="text" name="secretary" class="form-control"> 
-            <br>	
-
-            <label for="treasurer"> <b> Add a treasurer candidate </b> </label>
-            <input type="text" name="treasurer" class="form-control"> 
-            <br>	
-
-            <label for="vpcr"> <b> Add a vpcr candidate </b> </label>
-            <input type="text" name="vpcr" class="form-control"> 
-            <br>	
-
-            <label for="vphr"> <b> Add a vphr candidate </b> </label>
-            <input type="text" name="vphr" class="form-control"> 
-            <br>	
-
-            <label for="vppr"> <b> Add a vppr candidate </b> </label>
-            <input type="text" name="vppr" class="form-control"> 
-            <br>	
-
-        </div>
-        <button type="submit" class="btn btn-primary" >Submit</button>
-    </form> 
-
-    <br>
-    <br>
 
     <form action="/changeCurrentVoting" method="post">
         <div class = "form-group">
-            <label for="currentVoting"> <b>Choose current voting position:</b></label>
+            <label for="currentVoting"> <b>Choose current voting question:</b></label>
             <select class = "form-control" id="currentVoting" name = "currentVoting">
-                <% candidates.forEach(function(position) { %>
-                    <option value="<%= position %>" > <%= position%> </option>
+                <% questions.forEach(function(question) { %>
+                    <option value="<%= question.question_id%>" > <%= question.question_text%> </option>
                     <br>
                 <% }); %>
             </select> 
@@ -46,5 +14,52 @@
             <button type="submit" class="btn btn-primary"> Submit </button>
         <div>
     </form>
+
+
+     <form action="/addUser" method="post">
+        <div class = "form-group">
+            <label for="username"> <b> Add user </b> </label>
+            <input type="text" name="username" class="form-control" required > 
+            <br>	
+        </div>
+        <button type="submit" class="btn btn-primary" >Submit</button>
+    </form> 
+
+
+     <form action="/addQuestion" method="post">
+        <div class = "form-group">
+            <label for="question"> <b> Add question </b> </label>
+            <input type="text" name="question" class="form-control" required > 
+            <br>	
+        </div>
+        <button type="submit" class="btn btn-primary" >Submit</button>
+    </form> 
+
+
+    <br>
+    <h2> All users </h2>
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Username</th>
+              <th scope="col">Code</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% users.forEach( (user, index) => { %>
+                <tr>
+                    <th scope="row"> <%= index +1 %>  </th>
+                    <td> <%= user.username %>  </td>
+                    <td> <%= user.code %> </td>
+                </tr>
+            <% }); %>
+          </tbody>
+        </table
+
 </div>
+
+
+
+
 <%- include('includes/header') %>

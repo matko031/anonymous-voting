@@ -2,12 +2,14 @@
     <div class = "container">
         <form action="/vote" method="POST">
         <div class = "form-group">
-            <label for="position"> <b>Your vote for <%= name %></b> </label>
+            <label for="vote"> <b>Your vote for <%= question %></b> </label>
                 <select id="vote" name="vote" class="form-control"  >
-                <% candidates.forEach( (candidate) => { %>
-                    <option value="<%= candidate %>"> <%= candidate %> </option>
+                <% answers.forEach( (answer) => { %>
+                    <option value="<%= answer.answer_id%>"> <%= answer.answer_text%> </option>
                 <% }); %>
+                <!--
                 <option value="blank"> Blank </option>
+                -->
                 </select>
                 <br>
         </div>
@@ -15,13 +17,15 @@
                 <label for="code">Your code</label>
                 <input type="text" name="code" class="form-control">
         </div>
-        <input type="hidden" name="position" value="<%= name %>" >
+        <input type="hidden" name="question_id" value="<%= question_id %>" >
         <div class="form-group">
                 <button type="submit" class="btn btn-primary"> Send </button>
         </div>
         </form>
                 <a href="/results"><button class="btn btn-info"> Results </button> </a>
+                <!---
                 <a href="/adminlogin"><button class="btn btn-secondary"> Admin login</button> </a>
                 <a href="/dashboard"><button class="btn btn-warning"> Dashboard </button> </a>
+                -->
     </div>
 
