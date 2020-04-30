@@ -164,36 +164,36 @@ app.post("/adminlogin", passport.authenticate('local', {
 
 
 app.get("/dashboard", (req, res) => {
-//	if (req.user === "matko"){
+	if (req.user === "matko"){
     getUsers( (users) => {
         getQuestions ( (questions) =>{
             res.render("dashboard", { questions : questions, users: users});
         }) ;
     });
 
-//	} else{
-//		res.redirect("/");
-//	}
+	} else{
+		res.redirect("/");
+	}
 
 });
 
 
 app.post("/addUser", (req, res) => {
-//	if (req.user === "matko"){
+	if (req.user === "matko"){
     const username = req.body.username;
     const code = uniqid();
     const sql = `INSERT INTO user (username, code) VALUES ('${username}', '${code}')`;
     db.query(sql, (err, result) => {
         res.redirect('/dashboard');
     });
- //   }
+    }
 });
 
 
 
 
 app.post("/addQuestion", (req, res) => {
-//	if (req.user === "matko"){
+	if (req.user === "matko"){
     const question = req.body.question;
     const sql = `INSERT INTO question (question_text) VALUES ('${question}')`;
     db.query(sql, (err, result1) => {
@@ -218,15 +218,15 @@ app.post("/addQuestion", (req, res) => {
         });
     });
 
- //   }
+    }
 });
 
 app.post("/changeCurrentVoting", (req, res) => {
-//    if (req.user === "matko"){
+    if (req.user === "matko"){
         if('currentVoting' in req.body){
             currentVoting = req.body.currentVoting;
         }
-//    }
+    }
     res.redirect("/");
 });
 
