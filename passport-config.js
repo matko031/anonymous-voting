@@ -2,7 +2,7 @@ const localStrategy = require('passport-local').Strategy;
 
 function initializeStrategy(passport) {
 	const authenticateUser = async (username, password, done) => {
-		if (username == "matko" && password == "matkoisthebest"){
+		if (username == "matko" && password == "Animiranisir49627"){
 			return done(null, "matko");
 		}
 		return done(null,false);
