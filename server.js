@@ -20,8 +20,8 @@ const db = mysql.createConnection({
 
 
 const db = mysql.createConnection({
-    username: 'b403519124d5e3',
-    password: '2977cb03',
+    user: 'b403519124d5e3',
+    password: '2976cb03',
     host: 'eu-cdbr-west-03.cleardb.net',
     database: 'heroku_e2ec6684540f209'
 });
