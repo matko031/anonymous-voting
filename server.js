@@ -19,7 +19,7 @@ const db = mysql.createConnection({
 */
 
 
-const db = mysql.createConnection({
+let db = mysql.createConnection({
     user: 'b403519124d5e3',
     password: '2976cb03',
     host: 'eu-cdbr-west-03.cleardb.net',
@@ -33,6 +33,29 @@ db.connect( (err) => {
     }
     console.log('MySql Connected...');
 });
+
+db.on('error', function(err) {
+    console.log('leleleeeee', err);
+    console.log('leleleeeee2222', err.code);
+    if ( err.code == "PROTOCOL_CONNECTION_LOST"){
+    
+        db.destroy();
+        db = mysql.createConnection({
+            user: 'b403519124d5e3',
+            password: '2976cb03',
+            host: 'eu-cdbr-west-03.cleardb.net',
+            database: 'heroku_e2ec6684540f209'
+        });
+        db.connect( (err) => {
+            if (err) {
+                console.log(err);
+            }
+            console.log('MySql Connected...');
+        });
+
+    }
+});
+
 const app = express();
 
 //Set view engine to ejs
@@ -137,7 +160,9 @@ app.post("/vote", (req, res) => {
                                sql4 = `INSERT INTO vote (answer_id) VALUES(${vote})`;
                                 db.query(sql4, (err, result) =>{
                                     if(err) console.log(err); 
+                                    else{
                                     res.render("done", {err: error});
+                                    }
                                 });
                             });
                         } else{
@@ -245,6 +270,7 @@ app.get("/results", (req, res) => {
             }
             voting_results[elem.question_text][elem.answer_text] = elem.votes;
         });
+        console.log(voting_results);
         res.render('results', {results: voting_results});
     });
 });
