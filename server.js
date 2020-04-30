@@ -54,7 +54,7 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-currentVoting = "14";
+currentVoting = 1;
 
 const getUsers= (next) => {
     const sql = "SELECT username, code FROM user";
@@ -79,7 +79,9 @@ const getQuestion = (question_id, next) => {
     const sql = `SELECT question_text FROM question WHERE question_id=${question_id}`;
     db.query(sql, (err, res) => {
         if (err) console.log('getQuestion', err);
-        else next(res[0].question_text);
+        else {
+            next(res[0].question_text);
+        }
     });
 };
 
