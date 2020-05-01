@@ -3,10 +3,10 @@ const session = require("express-session");
 const express= require("express");
 const bodyParser = require("body-parser");
 const fs = require('fs');
+const mysql = require('mysql');
 const passport = require('passport');
 const initializePassport = require('./passport-config');
 initializePassport(passport);
-const mysql = require('mysql');
 
 /* localhost
 const db = mysql.createConnection({
@@ -36,7 +36,6 @@ db.connect( (err) => {
 
 
 const recreateConnection = () => {
-        console.log('recreate Connectin');
         db.destroy();
         db = mysql.createConnection({
             user: 'b403519124d5e3',
@@ -48,7 +47,6 @@ const recreateConnection = () => {
             if (err) {
                 console.log(err);
             }
-            console.log('MySql Connected...');
         });
 };
 
@@ -81,6 +79,11 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+
+
+
+
+
 currentVoting = 1;
 
 const getUsers= (next) => {
@@ -99,7 +102,6 @@ const getQuestions = (next) => {
         else next(res);
     });
 };
-
 
 
 const getQuestion = (question_id, next) => {
@@ -132,7 +134,6 @@ app.get("/", (req, res) => {
 
     });
 });
-
 
 
 app.post("/vote", (req, res) => {
@@ -181,8 +182,62 @@ app.post("/vote", (req, res) => {
 });
 
 
+app.get("/results", (req, res) => {
+    const sql = "SELECT question_text, answer_text, COUNT(*) AS votes FROM vote INNER JOIN answer ON vote.answer_id=answer.answer_id INNER JOIN question ON answer.question_id = question.question_id GROUP BY vote.answer_id";
+    db.query(sql, (err, result) => {
+        if(err) console.log(err); 
+        let processed = 0;
+        voting_results = {};
+        result.forEach( elem =>{
+            if (! voting_results.hasOwnProperty(elem.question_text)){
+                voting_results[elem.question_text] = {}; 
+            }
+            voting_results[elem.question_text][elem.answer_text] = elem.votes;
+        });
+        res.render('results', {results: voting_results});
+    });
+});
 
-app.get("/adminlogin", (req, res) => { 
+
+
+app.get("/register", (req, res) => { 
+	res.render("register");
+});
+
+
+
+app.post("/register", (req, res) => {
+    const code = req.body.code;
+    const password = req.body.password;
+
+    const msg = {text:'', type:''};
+
+    sql1 = `SELECT * FROM user WHERE code='${code}'`;
+    db.query(sql1, (err, result) =>{
+        if (result.length === 0){
+            msg.text = "User with this code does not exist in the database";
+            msg.type= "error";
+            res.render('notification', {msg : msg});
+        } else {
+            sql2 = `UPDATE user SET password = '${password}' WHERE code='${code}'`; 
+            db.query(sql2, (err, result) => {
+                if(err) {
+                    msg.text = err;
+                    msg.type= "error";
+                } else{
+                    msg.text = "Password has been setup succesfully";
+                    msg.type= "success";
+                }
+                res.render('notification', {msg : msg});
+            });
+        }
+    });
+});
+
+
+
+
+app.get("/login", (req, res) => { 
 	res.render("login");
 });
 
@@ -191,7 +246,6 @@ app.post("/adminlogin", passport.authenticate('local', {
 	successRedirect: '/dashboard',
 	failureRedirect: 'adminlogin'
 }));
-
 
 
 app.get("/dashboard", (req, res) => {
@@ -219,8 +273,6 @@ app.post("/addUser", (req, res) => {
     });
     }
 });
-
-
 
 
 app.post("/addQuestion", (req, res) => {
@@ -252,6 +304,7 @@ app.post("/addQuestion", (req, res) => {
     }
 });
 
+
 app.post("/changeCurrentVoting", (req, res) => {
     if (req.user === "matko"){
         if('currentVoting' in req.body){
@@ -261,21 +314,10 @@ app.post("/changeCurrentVoting", (req, res) => {
     res.redirect("/");
 });
 
-app.get("/results", (req, res) => {
-    const sql = "SELECT question_text, answer_text, COUNT(*) AS votes FROM vote INNER JOIN answer ON vote.answer_id=answer.answer_id INNER JOIN question ON answer.question_id = question.question_id GROUP BY vote.answer_id";
-    db.query(sql, (err, result) => {
-        if(err) console.log(err); 
-        let processed = 0;
-        voting_results = {};
-        result.forEach( elem =>{
-            if (! voting_results.hasOwnProperty(elem.question_text)){
-                voting_results[elem.question_text] = {}; 
-            }
-            voting_results[elem.question_text][elem.answer_text] = elem.votes;
-        });
-        res.render('results', {results: voting_results});
-    });
-});
+
+
+
+
 
 
 

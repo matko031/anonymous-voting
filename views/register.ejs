@@ -1,0 +1,21 @@
+<%- include('includes/header') %>
+    <div class="container">
+     <form action="/register" method="post">
+        <div class = "form-group">
+
+            <label for="psw"><b>Code</b></label>
+            <input type="text" class='form-control' placeholder="Enter Password" name="code" required>
+             <small id="codeHelp" class="form-text text-muted">Type the code you received from the voting administrator</small>           
+
+
+            <label for="psw"><b>Password</b></label>
+            <input type="password" class='form-control' placeholder="Enter Password" name="password" required>
+            <small id="passwordHelp" class="form-text text-muted">Type a password of choice</small>           
+
+            <br>
+            <button type="submit" class="btn btn-danger">Login</button>
+        </div>
+
+    </form> 
+    </div>
+<%- include('includes/header') %>

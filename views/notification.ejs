@@ -1,0 +1,13 @@
+<%- include('includes/header') %>
+    <% if ( typeof msg != 'undefined') { %>
+        <% if (msg.type == 'success'){  %>
+            <div class="alert alert-success" role="alert">
+                <%= msg.text %>
+            </div>
+        <% } else if (msg.type == 'error') {%>
+            <div class="alert alert-danger" role="alert">
+                <%= msg.text %>
+            </div>
+        <% }; %>
+    <% }; %>
+<%- include('includes/header') %>
