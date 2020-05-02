@@ -1,6 +1,11 @@
 <%- include('includes/header') %>
+
+<% if (messages.error ){ %>
+    <%= messages.error %>
+<%} %>
+
     <div class="container">
-     <form action="/adminlogin" method="post">
+     <form action="/login" method="post">
         <div class = "form-group">
             <label for="username"><b>Username</b></label>
             <input type="text" class='form-control' placeholder="Enter Username" name="username" required>
@@ -14,4 +19,4 @@
 
     </form> 
     </div>
-<%- include('includes/header') %>
+<%- include('includes/footer') %>

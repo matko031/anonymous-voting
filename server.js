@@ -6,44 +6,103 @@ const fs = require('fs');
 const mysql = require('mysql');
 const passport = require('passport');
 const initializePassport = require('./passport-config');
-initializePassport(passport);
+const flash = require('express-flash');
+const bcrypt = require('bcrypt');
 
+const app = express();
 
 
 const db_config = require('./config');
-
-db.connect( (err) => {
-    if (err) {
-        console.log(err);
-    }
-    console.log('MySql Connected...');
-});
+let db = mysql.createPool(db_config);
 
 
-const recreateConnection = () => {
-        db.destroy();
-        db = mysql.createConnection({
-            user: 'b403519124d5e3',
-            password: '2976cb03',
-            host: 'eu-cdbr-west-03.cleardb.net',
-            database: 'heroku_e2ec6684540f209'
+currentVoting = 11;
+
+
+const runQuery = (sql) => {
+    return new Promise( (resolve, reject) => {
+        db.query(sql, (err, res) => {
+            if (err) reject(err);
+            else resolve (res);
         });
-        db.connect( (err) => {
-            if (err) {
-                console.log(err);
-            }
-        });
+    });
 };
 
 
-setInterval(recreateConnection, 3000);
+const getUsers= async () => {
+    return new Promise ( (resolve, reject) => {
+        const sql = "SELECT username, code FROM user";
+        runQuery(sql).then( (res) => resolve(res) );
+    });
+};
 
-db.on('error', function(err) {
-    console.log('leleleeeee', err);
+
+const getQuestions = async () => {
+    return new Promise ( (resolve, reject) => {
+        const sql = "SELECT question_id, question_text FROM question";
+        runQuery(sql).then( (res) => resolve(res) );
+    });
+};
+
+const getQuestion = async (question_id) => {
+    return new Promise ( (resolve, reject) => {
+        const sql = `SELECT question_text FROM question WHERE question_id=${question_id}`;
+        runQuery(sql).then( (res) => resolve(res[0].question_text) );
+    });
+};
+
+
+const getAnswers = async (question_id) => {
+    return new Promise ( (resolve, reject) => {
+        const sql = `SELECT answer_text, answer_id FROM answer WHERE question_id = ${question_id}`;
+        runQuery(sql).then( (res) => resolve(res) );
+    });
+};
+
+const getUserByCode= async code => {
+    return new Promise ( (resolve, reject) => {
+        const sql = `SELECT * FROM user WHERE code='${code}'`;
+        runQuery(sql).then( (result) => resolve(result[0]) );
+    });
+};
+
+const getUserByUsername = async username => {
+    return new Promise ( (resolve, reject) => {
+        const sql = `SELECT * FROM user WHERE username='${username}'`;
+        runQuery(sql).then( result => resolve(result[0]) );
+    });
+};
+
+
+const getUserById = async user_id=> {
+    return new Promise ( (resolve, reject) => {
+        const sql = `SELECT * FROM user WHERE user_id='${user_id}'`;
+        runQuery(sql).then( result => resolve(result[0]) );
+    });
+};
+
+
+const checkAuthenticated = (req, res, next) => {
+    if (req.isAuthenticated()){
+        return next();
+    }else  {
+        return res.redirect('/'); 
     }
-);
+};
 
-const app = express();
+
+
+const checkNotAuthenticated = (req, res, next) => {
+    if (req.isAuthenticated()){
+        return res.redirect('/'); 
+    }else  {
+        return next();
+    }
+};
+
+
+initializePassport(passport, getUserByUsername, getUserById );
+
 
 //Set view engine to ejs
 app.set("view engine", "ejs");
@@ -54,7 +113,7 @@ app.set("views", __dirname + "/views");
 //Use body-parser
 app.use(bodyParser.urlencoded({ extended: false }));
 
-
+app.use(flash());
 app.use(session({
 	//TODO: change secret to smth more secure
 	secret: 'matkoisthebest',
@@ -69,101 +128,55 @@ app.use(passport.session());
 
 
 
-currentVoting = 1;
 
-const getUsers= (next) => {
-    const sql = "SELECT username, code FROM user";
-    db.query(sql, (err, res) => {
-        if (err) console.log('getUsers', err);
-        else next(res);
-    });
-};
-
-
-const getQuestions = (next) => {
-    const sql = "SELECT question_id, question_text FROM question";
-    db.query(sql, (err, res) => {
-        if (err) console.log('getQuestions', err);
-        else next(res);
-    });
-};
-
-
-const getQuestion = (question_id, next) => {
-    const sql = `SELECT question_text FROM question WHERE question_id=${question_id}`;
-    db.query(sql, (err, res) => {
-        if (err) console.log('getQuestion', err);
-        else {
-            next(res[0].question_text);
-        }
-    });
-};
-
-
-const getAnswers = (question_id, next) => {
-    const sql = `SELECT answer_text, answer_id FROM answer WHERE question_id = ${question_id}`;
-    db.query(sql, (err, res) => {
-        if (err) console.log('getAnswer', err);
-        else next(res);
-    });
-};
-
-
-
-
-app.get("/", (req, res) => { 
-    getQuestion( currentVoting, (q) =>{
-        getAnswers(currentVoting, (answers) => {
-            res.render("index", {question: q, question_id: currentVoting, answers : answers});
-        });
-
-    });
+app.get("/", async (req, res) => { 
+    res.render("index", {isAuthenticated : req.isAuthenticated()});
 });
 
+app.get("/vote", async (req, res) => {
+    const question = await getQuestion( currentVoting ).then( (question) => {return question;});
+    const answers = await getAnswers(currentVoting).then ( (answers) => {return answers;});
+    res.render("vote", {question: question, question_id: currentVoting, answers : answers}); 
+});
 
-app.post("/vote", (req, res) => {
+app.post("/vote", async (req, res) => {
 	const code = req.body.code;
 	const vote = req.body.vote;
     const question_id = req.body.question_id;
 
-
-    error = "";
-    if ( question_id !== currentVoting){
-        error = "The voting position has changed after you have opened the voting page. Please go back to the homepage and vote again";
-        res.render("done", {err: error});
+    let sql;
+    msg = {};
+    
+    if ( question_id != currentVoting){
+        msg.text = "The voting position has changed after you have opened the voting page. Please go back to the homepage and vote again";
+        msg.type = 'warning';
     } else {
-        sql1 = `SELECT user_id FROM user WHERE code='${code}'`;
-        db.query(sql1, (err, result) => {
-            if (err) console.log(err);
-            else{
-                if(result.length === 0){
-                    error = "The code you have typed does not exist";
-                    res.render("done", {err: error});
-                } else{
-                    const user_id = result[0].user_id; 
-                    sql2 = `SELECT user_id FROM voted WHERE user_id=${user_id} AND question_id=${currentVoting}`;
-                    db.query(sql2, (err, result) => {
-                        if(err) console.log(err);
-                        if(result.length === 0){
-                           sql3 = `INSERT INTO voted VALUES(${user_id}, ${currentVoting})`;
-                            db.query(sql3, (err,result) => {
-                               sql4 = `INSERT INTO vote (answer_id) VALUES(${vote})`;
-                                db.query(sql4, (err, result) =>{
-                                    if(err) console.log(err); 
-                                    else{
-                                    res.render("done", {err: error});
-                                    }
-                                });
-                            });
-                        } else{
-                            error = "You have already votes for this question"; 
-                            res.render("done", {err: error});
-                        } 
-                    });
-                }
+        const user = await getUserByCode(code).then( (user) => {return user;});
+        if(user.length === 0){
+            msg.text = "The code you have typed does not exist";
+            msg.type = 'warning';
+
+        } else{
+            const user_id = user[0].user_id; 
+            sql = `SELECT user_id FROM voted WHERE user_id=${user_id} AND question_id=${currentVoting}`;
+            const userIdInVoted = await runQuery(sql).then( result => {return result;});
+            if(userIdInVoted.length === 0){
+                sql = `INSERT INTO voted VALUES(${user_id}, ${currentVoting})`;
+                runQuery(sql).then( res => {});
+                sql = `INSERT INTO vote (answer_id) VALUES(${vote})`;
+                runQuery(sql).then( res => {});
+                res.render("done", {err: error});
+
+                msg.text = "Your vote has been submitted sucessfully";
+                msg.type = 'success';
+
+            } else{
+                msg.text = "You have already votes for this question"; 
+                msg.type = 'warning';
             }
-        });
+        }
     }
+    res.render("notification", {msg: msg});
 });
 
 
@@ -191,32 +204,28 @@ app.get("/register", (req, res) => {
 
 
 
-app.post("/register", (req, res) => {
+app.post("/register", async (req, res) => {
     const code = req.body.code;
     const password = req.body.password;
 
-    const msg = {text:'', type:''};
+    const msg = {};
 
-    sql1 = `SELECT * FROM user WHERE code='${code}'`;
-    db.query(sql1, (err, result) =>{
-        if (result.length === 0){
-            msg.text = "User with this code does not exist in the database";
-            msg.type= "error";
-            res.render('notification', {msg : msg});
-        } else {
-            sql2 = `UPDATE user SET password = '${password}' WHERE code='${code}'`; 
-            db.query(sql2, (err, result) => {
-                if(err) {
-                    msg.text = err;
-                    msg.type= "error";
-                } else{
-                    msg.text = "Password has been setup succesfully";
-                    msg.type= "success";
-                }
-                res.render('notification', {msg : msg});
-            });
-        }
-    });
+    const user = await getUserByCode(code).then( (user) => {return user;});
+    if (user.length === 0){
+        msg.text = "User with this code does not exist in the database";
+        msg.type= "error";
+    } else {
+        const hashed_password = await bcrypt.hash(password, 10);
+        const sql = `UPDATE user SET password = '${hashed_password}' WHERE code='${code}'`; 
+        await runQuery(sql).then( result => {
+            msg.text = "Password has been setup succesfully";
+            msg.type= "success";
+        }).catch( err => {
+                msg.text = err;
+                msg.type= "error";
+        });
+    }
+    res.render('notification', {msg : msg});
 });
 
 
@@ -227,23 +236,27 @@ app.get("/login", (req, res) => {
 });
 
 
-app.post("/adminlogin", passport.authenticate('local', {
-	successRedirect: '/dashboard',
-	failureRedirect: 'adminlogin'
+app.post("/login", passport.authenticate('local', {
+	successRedirect: '/',
+	failureRedirect: '/login',
+    failureFlash: true
 }));
 
 
-app.get("/dashboard", (req, res) => {
-	if (req.user === "matko"){
-    getUsers( (users) => {
-        getQuestions ( (questions) =>{
-            res.render("dashboard", { questions : questions, users: users});
-        }) ;
-    });
+app.post('/logout', (req, res) => {
+    req.logOut();
+    res.redirect('/');
+});
 
-	} else{
+
+app.get("/dashboard", checkAuthenticated, async (req, res) => {
+	if (req.user.admin == 1){
+        Promise.all([getUsers(), getQuestions()]).then( ([users, questions]) => {
+            res.render("dashboard", { questions : questions, users: users});
+        }).catch( err => console.log(err));
+	} else {
 		res.redirect("/");
-	}
+    }
 
 });
 

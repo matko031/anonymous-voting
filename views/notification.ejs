@@ -8,6 +8,10 @@
             <div class="alert alert-danger" role="alert">
                 <%= msg.text %>
             </div>
+        <% } else if (msg.type == 'warning') {%>
+            <div class="alert alert-warning" role="alert">
+                <%= msg.text %>
+            </div>
         <% }; %>
     <% }; %>
-<%- include('includes/header') %>
+<%- include('includes/footer') %>
