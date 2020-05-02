@@ -8,24 +8,9 @@ const passport = require('passport');
 const initializePassport = require('./passport-config');
 initializePassport(passport);
 
-/* localhost
-const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'matko',
-    password: 'matkoisthebest',
-    database: 'anonymous_voting'
-});
-
-*/
 
 
-let db = mysql.createConnection({
-    user: 'b403519124d5e3',
-    password: '2976cb03',
-    host: 'eu-cdbr-west-03.cleardb.net',
-    database: 'heroku_e2ec6684540f209'
-});
-
+const db_config = require('./config');
 
 db.connect( (err) => {
     if (err) {
