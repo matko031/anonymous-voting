@@ -1,4 +1,5 @@
 <%- include('includes/header') %>
+
 <div class="container">
 
     <form action="/changeCurrentVoting" method="post">
@@ -30,6 +31,13 @@
         <div class = "form-group">
             <label for="question"> <b> Add question </b> </label>
             <input type="text" name="question" class="form-control" required > 
+            <label for="questionType"> <b> Question Type</b> </label>
+            <select class = "form-control" name = "questionType">
+                <option value="LGA_candidate" > LGA Candidate </option>
+                <option value="yes/no" > Yes/No </option>
+                <option value="proposal" > Proposal </option>
+                <option selected value=''>-</option>
+            </select> 
             <br>	
         </div>
         <button type="submit" class="btn btn-primary" >Submit</button>
@@ -37,29 +45,172 @@
 
 
     <br>
-    <h2> All users </h2>
-        <table class="table table-striped">
-          <thead>
+    <h3> All Users </h3>
+    <table class="table table-striped" >
+      <thead>
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Username</th>
+          <th scope="col">Code</th>
+          <th scope="col">Edit</th>
+          <th scope="col">Voted on current question</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% users.forEach( (user, index) => { %>
             <tr>
-              <th scope="col">#</th>
-              <th scope="col">Username</th>
-              <th scope="col">Code</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% users.forEach( (user, index) => { %>
-                <tr>
-                    <th scope="row"> <%= index +1 %>  </th>
-                    <td> <%= user.username %>  </td>
-                    <td> <%= user.code %> </td>
-                </tr>
-            <% }); %>
-          </tbody>
-        </table
+                <th scope="row"> <%= index +1 %>  </th>
+                <td> <%= user.username %>  </td>
+                <td> <%= user.code %> </td>
+                <td>
 
+                    <!-- Button trigger modal -->
+                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal<%=index%>">
+                     Edit user 
+                    </button>
+
+                    <!-- Modal -->
+                    <div class="modal fade" id="exampleModal<%=index%>" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                      <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                              <span aria-hidden="true">&times;</span>
+                            </button>
+                          </div>
+                        <form action="/editUser" method="post">
+                          <div class="modal-body">
+                                <b>Username:</b> <br>
+                                <input type="text" name="username" value="<%= user.username %>" >
+                                <br>
+                                <b> Admin :</b> <br>
+                                <input type="text" name="admin" value="<%= user.admin %>" >
+                                <input type="hidden" name="user_id" value="<%= user.user_id %>" >
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Save changes</button>
+                            <button type="button" class="btn btn-danger" onClick="deleteUser(<%= user.user_id %> )" > Delete User</button>
+                          </div>
+                        </form>
+                        </div>
+                      </div>
+                    </div>
+
+
+                </td>
+                <td>
+
+                    <% const v =  voted.includes(user.user_id) ? 'yes' : 'no' %> 
+                    <%= v %>
+
+                </td>
+            </tr>
+        <% }); %>
+      </tbody>
+    </table
+    <br>
+    <br>
+    <h3> All Questions</h3>
+    <table class="table table-striped" >
+      <thead>
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Question</th>
+          <th scope="col">Answers</th>
+          <th scope="col">Edit</th>
+          <th scope="col"> Show </th>
+        </tr>
+      </thead>
+      <tbody>
+        <% questions.forEach( (question, index) => { %>
+            <tr>
+                <th scope="row"> <%= index +1 %>  </th>
+                <td> <%= question.question_text %>  </td>
+                <td> 
+                    <% let answers = question.answers.map( answer => {return answer.answer_text} ); %>
+                    <%= answers %> 
+                </td>
+                <td>
+
+                    <!-- Button trigger modal -->
+                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal<%=index%>">
+                     Edit question 
+                    </button>
+
+                    <!-- Modal -->
+                    <div class="modal fade" id="exampleModal<%=index%>" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                      <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                              <span aria-hidden="true">&times;</span>
+                            </button>
+                          </div>
+                        <form action="/editQuestion" method="post">
+                          <div class="modal-body">
+
+                                <b>Question Name:</b> <br>
+                                <input type="text" name="qtext" value="<%= question.question_text %>" >
+                                <input type="hidden" name="question_id" value="<%= question.question_id %>" >
+                                <br>
+                                <b>Answers:</b> <br>
+                                <input type="text" name="answers" value="<%= answers %>" >
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Save changes</button>
+                            <button type="button" class="btn btn-danger" onClick="deleteQuestion(<%= question.question_id %> )" >Delete Question</button>
+                          </div>
+                        </form>
+                        </div>
+                      </div>
+                    </div>
+                </td>
+                <td>
+                    <% const checked = question.shown == 1 ?'checked' : '' %>
+                    <input type="checkbox" name="shownCheckbox" onClick="updateShownQuestion (this, <%= question.question_id %> )" <%= checked  %> >
+                </td>
+            </tr>
+        <% }); %>
+      </tbody>
+    </table
 </div>
 
 
+<script>
+    function deleteQuestion(qid){
+      $.post("deleteQuestion",
+      {
+        question_id:qid 
+      }, (err, res) => {
+          console.log(err, res);
+          location.reload()
+      });
+    }; 
 
+    function deleteUser(uid){
+      $.post("deleteUser",
+      {
+        user_id:uid 
+      }, (err, res) => {
+          console.log(err, res);
+          location.reload()
+      });
+    }; 
+
+
+    function updateShownQuestion(elem, qid) {
+        const shown = elem.checked == true ? 1 : 0; 
+        $.post('updateShownQuestion', {
+            qid : qid,
+            shown: shown
+        })
+    };
+
+
+</script>
 
 <%- include('includes/header') %>

@@ -31,7 +31,7 @@ const runQuery = (sql) => {
 
 const getUsers= async () => {
     return new Promise ( (resolve, reject) => {
-        const sql = "SELECT username, code FROM user";
+        const sql = "SELECT * FROM user";
         runQuery(sql).then( (res) => resolve(res) );
     });
 };
@@ -39,55 +39,50 @@ const getUsers= async () => {
 
 const getQuestions = async () => {
     return new Promise ( (resolve, reject) => {
-        const sql = "SELECT question_id, question_text FROM question";
+        const sql = "SELECT * FROM question";
         runQuery(sql).then( (res) => resolve(res) );
     });
 };
 
-const getQuestion = async (question_id) => {
+const getQuestionByKey = async (key, value) => {
     return new Promise ( (resolve, reject) => {
-        const sql = `SELECT question_text FROM question WHERE question_id=${question_id}`;
-        runQuery(sql).then( (res) => resolve(res[0].question_text) );
+        const sql = `SELECT question_text FROM question WHERE ${key}="${value}"`;
+        runQuery(sql).then( res =>  resolve(res)  );
     });
 };
 
 
-const getAnswers = async (question_id) => {
+const getAnswersByQuestionId = async (question_id) => {
     return new Promise ( (resolve, reject) => {
         const sql = `SELECT answer_text, answer_id FROM answer WHERE question_id = ${question_id}`;
         runQuery(sql).then( (res) => resolve(res) );
     });
 };
 
-const getUserByCode= async code => {
+const getUserByKey = async (key, value)=> {
     return new Promise ( (resolve, reject) => {
-        const sql = `SELECT * FROM user WHERE code='${code}'`;
-        runQuery(sql).then( (result) => resolve(result[0]) );
-    });
-};
-
-const getUserByUsername = async username => {
-    return new Promise ( (resolve, reject) => {
-        const sql = `SELECT * FROM user WHERE username='${username}'`;
-        runQuery(sql).then( result => resolve(result[0]) );
-    });
-};
-
-
-const getUserById = async user_id=> {
-    return new Promise ( (resolve, reject) => {
-        const sql = `SELECT * FROM user WHERE user_id='${user_id}'`;
-        runQuery(sql).then( result => resolve(result[0]) );
+        const sql = `SELECT * FROM user WHERE ${key}="${value}"`;
+        runQuery(sql).then( res =>  resolve(res) );
     });
 };
 
 
 const checkAuthenticated = (req, res, next) => {
-    if (req.isAuthenticated()){
+    //if (req.isAuthenticated()){
         return next();
-    }else  {
-        return res.redirect('/'); 
-    }
+    //}else  {
+    //    return res.redirect('/'); 
+    //}
+};
+
+
+
+const checkAdmin= (req, res, next) => {
+    //if (!req.isAuthenticated() || req.user.admin !== 1){
+    //    return res.redirect('/'); 
+    //}else  {
+        return next();
+   // }
 };
 
 
@@ -101,7 +96,7 @@ const checkNotAuthenticated = (req, res, next) => {
 };
 
 
-initializePassport(passport, getUserByUsername, getUserById );
+initializePassport(passport, getUserByKey);
 
 
 //Set view engine to ejs
@@ -133,13 +128,13 @@ app.get("/", async (req, res) => {
     res.render("index", {isAuthenticated : req.isAuthenticated()});
 });
 
-app.get("/vote", async (req, res) => {
-    const question = await getQuestion( currentVoting ).then( (question) => {return question;});
-    const answers = await getAnswers(currentVoting).then ( (answers) => {return answers;});
-    res.render("vote", {question: question, question_id: currentVoting, answers : answers}); 
+app.get("/vote", checkAuthenticated, async (req, res) => {
+    const question = await getQuestionByKey( 'question_id', currentVoting );
+    const answers = await getAnswersByQuestionId(currentVoting).then ( (answers) => {return answers;});
+    res.render("vote", {question: question[0].question_text, question_id: currentVoting, answers : answers}); 
 });
 
-app.post("/vote", async (req, res) => {
+app.post("/vote", checkAuthenticated, async (req, res) => {
 	const code = req.body.code;
 	const vote = req.body.vote;
     const question_id = req.body.question_id;
@@ -181,7 +176,7 @@ app.post("/vote", async (req, res) => {
 
 
 app.get("/results", (req, res) => {
-    const sql = "SELECT question_text, answer_text, COUNT(*) AS votes FROM vote INNER JOIN answer ON vote.answer_id=answer.answer_id INNER JOIN question ON answer.question_id = question.question_id GROUP BY vote.answer_id";
+    const sql = "SELECT question_text, answer_text, COUNT(*) AS votes FROM vote INNER JOIN answer ON vote.answer_id=answer.answer_id INNER JOIN question ON answer.question_id = question.question_id WHERE question.shown=1 GROUP BY vote.answer_id";
     db.query(sql, (err, result) => {
         if(err) console.log(err); 
         let processed = 0;
@@ -198,13 +193,13 @@ app.get("/results", (req, res) => {
 
 
 
-app.get("/register", (req, res) => { 
+app.get("/register", (checkNotAuthenticated, req, res) => { 
 	res.render("register");
 });
 
 
 
-app.post("/register", async (req, res) => {
+app.post("/register", checkNotAuthenticated, async (req, res) => {
     const code = req.body.code;
     const password = req.body.password;
 
@@ -231,85 +226,158 @@ app.post("/register", async (req, res) => {
 
 
 
-app.get("/login", (req, res) => { 
+app.get("/login",checkNotAuthenticated, (req, res) => { 
 	res.render("login");
 });
 
 
-app.post("/login", passport.authenticate('local', {
+app.post("/login",checkNotAuthenticated, passport.authenticate('local', {
 	successRedirect: '/',
 	failureRedirect: '/login',
     failureFlash: true
 }));
 
 
-app.post('/logout', (req, res) => {
+app.post('/logout',checkAuthenticated, (req, res) => {
     req.logOut();
     res.redirect('/');
 });
 
 
-app.get("/dashboard", checkAuthenticated, async (req, res) => {
-	if (req.user.admin == 1){
-        Promise.all([getUsers(), getQuestions()]).then( ([users, questions]) => {
-            res.render("dashboard", { questions : questions, users: users});
-        }).catch( err => console.log(err));
-	} else {
-		res.redirect("/");
-    }
+app.get("/dashboard", checkAdmin, async (req, res) => {
+    const questions = await getQuestions();
+    const questionsWithAnswers = await Promise.all(
+        questions.map(async q => {
+            return getAnswersByQuestionId (q.question_id).then( answers => {
+                q.answers=answers;
+                return q;
+            });
+        }));
 
-});
+    const sql = `SELECT * FROM voted WHERE question_id = "${currentVoting}"`;
+    usersVoted = runQuery(sql);
+
+    Promise.all([usersVoted, getUsers()]).then( values => {
+        const votedUsers = values[0].map ( u => u.user_id );
+        res.render("dashboard", { questions : questionsWithAnswers, users: values[1], voted: votedUsers });
+    }).catch( err => console.log(err));
+	} 
+);
 
 
-app.post("/addUser", (req, res) => {
-	if (req.user === "matko"){
+app.post("/addUser", checkAdmin, (req, res) => {
     const username = req.body.username;
     const code = uniqid();
     const sql = `INSERT INTO user (username, code) VALUES ('${username}', '${code}')`;
     db.query(sql, (err, result) => {
         res.redirect('/dashboard');
     });
-    }
 });
 
 
-app.post("/addQuestion", (req, res) => {
-	if (req.user === "matko"){
-    const question = req.body.question;
-    const sql = `INSERT INTO question (question_text) VALUES ('${question}')`;
-    db.query(sql, (err, result1) => {
+app.post("/editUser", checkAdmin, (req, res) => {
+    const uid = req.body.user_id;
+    const username = req.body.username;
+    const admin = req.body.username == 1 ? 1 : 0;
 
-        const sql2 = `SELECT question_id FROM question WHERE question_text = '${question}'`;
-        db.query(sql2, (err, result2) => {
-            
-            const q_id = result2[0].question_id;
+    console.log(uid, username, admin);
+    const sql = `UPDATE user SET username = '${username}', admin = '${admin}' WHERE user_id = "${uid}"`;
+    runQuery(sql).then( result => res.redirect("/dashboard"));
+});
 
-            let processed = 0;
-            const answers = ['accept', 'reject', 'abstain', 'withdraw'];
-            for (let i=0; i<4; i++){
-                let sql3 = `INSERT INTO answer (answer_text, question_id) VALUES ('${answers[i]}', ${q_id})`;
-                db.query(sql3, (err, result2) => {
-                    processed++;
-                    if (err) {console.log(err);}
-                    if (processed  == 4){
-                        res.redirect('/dashboard');                    
-                }
-                });
-            }
-        });
+
+
+
+app.post("/deleteUser", checkAdmin, async (req, res) => {
+    const uid = req.body.user_id;
+
+    const sql = `DELETE FROM user WHERE user_id='${uid}'`;
+    await runQuery(sql);
+    res.status(204).send();
+});
+
+
+
+
+app.post("/addQuestion", checkAdmin, async (req, res) => {
+    const q= req.body.question;
+    const qtype = req.body.questionType;
+    let answers = [];
+    switch (qtype){
+    case('proposal'):
+        answers = ['accept', 'reject', 'abstain', 'withdraw'];
+        break;
+    case('yes/no'):
+        answers = ['yes', 'no'];
+        break;
+    }
+
+    const sql = `INSERT INTO question (question_text) VALUES ('${q}')`;
+    const q_id = await runQuery(sql)
+        .then( result => {return result.insertId;})
+        .catch ( err => res.render("notification", {msg: {type:"error", text:err}} ));
+    console.log(answers);
+    answers.forEach( answer => {
+        let sql2 = `INSERT INTO answer (answer_text, question_id) VALUES ('${answer}', ${q_id})`;
+        runQuery(sql2);
     });
-
-    }
+    res.redirect('/dashboard');                    
 });
 
 
-app.post("/changeCurrentVoting", (req, res) => {
-    if (req.user === "matko"){
-        if('currentVoting' in req.body){
-            currentVoting = req.body.currentVoting;
-        }
-    }
-    res.redirect("/");
+
+app.post("/editQuestion", checkAdmin, async (req, res) => {
+    const qid = req.body.question_id;
+    const qtext= req.body.qtext;
+    const newAnswers = req.body.answers.split(',');
+
+    const sql = `UPDATE question SET question_text='${qtext}' WHERE question_id=${qid}`;
+    runQuery(sql);
+
+    const oldAnswers = await getAnswersByQuestionId(qid);
+    const oldAnswersText = oldAnswers.map( oa => oa.answer_text );
+
+    const answersToDelete = oldAnswers.filter ( oa => ! newAnswers.includes(oa.answer_text) );
+    const answersToAdd= newAnswers.filter ( na => ! oldAnswersText.includes(na) );
+    
+    const p1 = answersToDelete.map( a => {
+        let sql = `DELETE FROM answer WHERE answer_id='${a.answer_id}'`; 
+        return runQuery(sql);
+    }); 
+
+    const p2 = answersToAdd.map( a => {
+        let sql = `INSERT INTO answer(answer_text, question_id) VALUES("${a}", "${qid}")`;
+        return runQuery(sql);
+    }); 
+
+    Promise.all(p1+p2).then( result => res.redirect("/dashboard")).catch( err => console.log(err));
+});
+
+
+app.post("/deleteQuestion", checkAdmin, async (req, res) => {
+    const qid = req.body.question_id;
+
+    const sql1 = `DELETE FROM question WHERE question_id='${qid}'`;
+    await runQuery(sql1);
+    res.status(204).send();
+});
+
+
+app.post("/updateShownQuestion", checkAdmin, async (req, res) => {
+    const qid = req.body.qid;
+    const shown = req.body.shown;
+    const sql = `UPDATE question SET shown="${shown}" WHERE question_id = "${qid}"`;
+    await runQuery(sql);
+    res.status(204).send();
+});
+
+
+
+app.post("/changeCurrentVoting", checkAdmin, (req, res) => {
+    console.log(currentVoting);
+    currentVoting = req.body.currentVoting;
+    console.log(currentVoting);
+    res.redirect("/dashboard");
 });
 
 
