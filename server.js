@@ -193,7 +193,7 @@ app.get("/results", (req, res) => {
 
 
 
-app.get("/register", (checkNotAuthenticated, req, res) => { 
+app.get("/register", checkNotAuthenticated, (req, res) => { 
 	res.render("register");
 });
 
