@@ -1,14 +1,13 @@
 <%- include('includes/header') %>
-
-<h1> Welcome to the voting app of Local Best Group Leuven </h1>
-    
-<% if (isAuthenticated ){ %>
-        <form action="/logout" method="POST">
-            <button type = "submit" class="btn btn-info"> Logout </button>
-        </form>
-    <% } else{ %>
-        <br>
-        <a href="/login"><button class="btn btn-secondary"> Login </button> </a>
-        <a href="/register"><button class="btn btn-secondary"> Register </button> </a>
-    <% } %>
+<div class="container text-center">
+    <h1 class="mt-5"> Welcome to the voting app of Local Best Group Leuven! </h1>
+    <img src="img/BEST_Leuven.png">    
+    <% if (isAuthenticated ){ %>
+            <a href="/vote"><button class="btn btn-info btn-lg mt-5"> Vote </button> </a>
+        <% } else{ %>
+            <br>
+            <a href="/login"><button class="btn btn-info btn-lg mr-3"> Login </button> </a>
+            <a href="/register"><button class="btn btn-info btn-lg ml-3"> Register </button> </a>
+        <% } %>
+</div>
 <%- include('includes/footer') %>

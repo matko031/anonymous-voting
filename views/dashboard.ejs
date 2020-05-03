@@ -1,36 +1,62 @@
 <%- include('includes/header') %>
 
+<% const currQ = currentQuestion ? currentQuestion.question_text : "" %>
+<% const currQId = currentQuestion ? currentQuestion.question_id : "" %>
+
 <div class="container">
 
     <form action="/changeCurrentVoting" method="post">
+        <br>
+        <h5> <b>Current Voting</b></h5>
+        <br>
+        <b> Current question: </b> <%= currQ %>  <br>
         <div class = "form-group">
-            <label for="currentVoting"> <b>Choose current voting question:</b></label>
+            <label for="currentVoting"> <b>Change current voting question:</b></label>
             <select class = "form-control" id="currentVoting" name = "currentVoting">
-                <% questions.forEach(function(question) { %>
-                    <option value="<%= question.question_id%>" > <%= question.question_text%> </option>
+                <% questions.forEach( question => { %>
+                    <% let selected = question.question_id == currQId ? "selected" : ""; %>
+                    <option value="<%= question.question_id%>" <%= selected %> > <%= question.question_text%> </option>
                     <br>
                 <% }); %>
+                <% const selected = currentQuestion ? "" : "selected" %> 
+                <option value="" <%= selected %> > - </option>
             </select> 
             <br>
-            <button type="submit" class="btn btn-primary"> Submit </button>
+            <button type="submit" class="btn btn-dark"> Submit </button>
         <div>
     </form>
 
+    <br>
+    <br>
+    <br>
 
+    <h5> <b> Add user </b> </h5>
      <form action="/addUser" method="post">
         <div class = "form-group">
-            <label for="username"> <b> Add user </b> </label>
-            <input type="text" name="username" class="form-control" required > 
+            <label for="username"> <b> Username: </b> </label>
+            <input id="username" type="text" name="username" class="form-control" required > 
             <br>	
+            <label for="type"> <b> Account type: </b> </label>
+            <select class="form-control" id="type" name="type">
+                <option value="baby" > baby  </option>
+                <option value="full" > full </option>
+                <option value="admin" > admin </option>
+            </select>
         </div>
-        <button type="submit" class="btn btn-primary" >Submit</button>
+        <button type="submit" class="btn btn-dark" >Submit</button>
     </form> 
 
+    <br>
+    <br>
+    <br>
 
+
+    <h5> <b> Add question </b> </h5>
      <form action="/addQuestion" method="post">
         <div class = "form-group">
-            <label for="question"> <b> Add question </b> </label>
+            <label for="question"> <b> Question text </b> </label>
             <input type="text" name="question" class="form-control" required > 
+
             <label for="questionType"> <b> Question Type</b> </label>
             <select class = "form-control" name = "questionType">
                 <option value="LGA_candidate" > LGA Candidate </option>
@@ -38,9 +64,15 @@
                 <option value="proposal" > Proposal </option>
                 <option selected value=''>-</option>
             </select> 
+
+            <label for="voters"> <b> Who is allowed to vote </b> </label>
+            <select class = "form-control" name="voters">
+                <option value="baby" > Baby </option>
+                <option value="full" > Full </option>
+            </select> 
             <br>	
         </div>
-        <button type="submit" class="btn btn-primary" >Submit</button>
+        <button type="submit" class="btn btn-dark" >Submit</button>
     </form> 
 
 
@@ -52,6 +84,7 @@
           <th scope="col">#</th>
           <th scope="col">Username</th>
           <th scope="col">Code</th>
+          <th scope="col">Type</th>
           <th scope="col">Edit</th>
           <th scope="col">Voted on current question</th>
         </tr>
@@ -62,49 +95,52 @@
                 <th scope="row"> <%= index +1 %>  </th>
                 <td> <%= user.username %>  </td>
                 <td> <%= user.code %> </td>
+                <td> <%= user.type %> </td>
                 <td>
 
                     <!-- Button trigger modal -->
-                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal<%=index%>">
+                    <button type="button" class="btn btn-dark" data-toggle="modal" data-target="#userModal<%=index%>">
                      Edit user 
                     </button>
 
                     <!-- Modal -->
-                    <div class="modal fade" id="exampleModal<%=index%>" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                    <div class="modal fade" id="userModal<%=index%>" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
                       <div class="modal-dialog" role="document">
                         <div class="modal-content">
                           <div class="modal-header">
-                            <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                            <h5 class="modal-title" id="userModalLabel">Modal title</h5>
                             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                               <span aria-hidden="true">&times;</span>
                             </button>
                           </div>
                         <form action="/editUser" method="post">
                           <div class="modal-body">
+                            <div class="form-group">
                                 <b>Username:</b> <br>
-                                <input type="text" name="username" value="<%= user.username %>" >
+                                <input type="text" name="username" class="form-control" value="<%= user.username %>" >
                                 <br>
-                                <b> Admin :</b> <br>
-                                <input type="text" name="admin" value="<%= user.admin %>" >
+                                <b> Type :</b> <br>
+                                <select name="type" class="form-control" >
+                                    <option value="baby"> baby </option>
+                                    <option value="full"> full </option>
+                                    <option value="admin"> admin</option>
+                                </select>
                                 <input type="hidden" name="user_id" value="<%= user.user_id %>" >
+                            </div>
                           </div>
                           <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                            <button type="submit" class="btn btn-primary">Save changes</button>
+                            <button type="submit" class="btn btn-dark">Save changes</button>
                             <button type="button" class="btn btn-danger" onClick="deleteUser(<%= user.user_id %> )" > Delete User</button>
                           </div>
                         </form>
                         </div>
                       </div>
                     </div>
-
-
                 </td>
                 <td>
-
                     <% const v =  voted.includes(user.user_id) ? 'yes' : 'no' %> 
                     <%= v %>
-
                 </td>
             </tr>
         <% }); %>
@@ -121,6 +157,7 @@
           <th scope="col">Answers</th>
           <th scope="col">Edit</th>
           <th scope="col"> Show </th>
+          <th scope="col"> Voters</th>
         </tr>
       </thead>
       <tbody>
@@ -135,33 +172,40 @@
                 <td>
 
                     <!-- Button trigger modal -->
-                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal<%=index%>">
+                    <button type="button" class="btn btn-dark" data-toggle="modal" data-target="#questionModal<%=index%>">
                      Edit question 
                     </button>
 
                     <!-- Modal -->
-                    <div class="modal fade" id="exampleModal<%=index%>" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                    <div class="modal fade" id="questionModal<%=index%>" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
                       <div class="modal-dialog" role="document">
                         <div class="modal-content">
                           <div class="modal-header">
-                            <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                            <h5 class="modal-title" id="questionModalLabel">Modal title</h5>
                             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                               <span aria-hidden="true">&times;</span>
                             </button>
                           </div>
                         <form action="/editQuestion" method="post">
                           <div class="modal-body">
-
+                            <div class="form-group">
                                 <b>Question Name:</b> <br>
-                                <input type="text" name="qtext" value="<%= question.question_text %>" >
+                                <input type="text" name="qtext" class="form-control" value="<%= question.question_text %>" >
                                 <input type="hidden" name="question_id" value="<%= question.question_id %>" >
                                 <br>
                                 <b>Answers:</b> <br>
-                                <input type="text" name="answers" value="<%= answers %>" >
+                                <input type="text" name="answers" value="<%= answers %>" class="form-control" >
+                                <br>
+                                <b> Voters:</b> <br>
+                                <select name="voters" class="form-control" >
+                                    <option value="baby"> baby </option>
+                                    <option value="full"> full </option>
+                                </select>
+                            </div>
                           </div>
                           <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                            <button type="submit" class="btn btn-primary">Save changes</button>
+                            <button type="submit" class="btn btn-dark">Save changes</button>
                             <button type="button" class="btn btn-danger" onClick="deleteQuestion(<%= question.question_id %> )" >Delete Question</button>
                           </div>
                         </form>
@@ -173,6 +217,7 @@
                     <% const checked = question.shown == 1 ?'checked' : '' %>
                     <input type="checkbox" name="shownCheckbox" onClick="updateShownQuestion (this, <%= question.question_id %> )" <%= checked  %> >
                 </td>
+                <td> <%= question.voters %> </td>
             </tr>
         <% }); %>
       </tbody>
@@ -213,4 +258,4 @@
 
 </script>
 
-<%- include('includes/header') %>
+<%- include('includes/footer') %>

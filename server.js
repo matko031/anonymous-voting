@@ -16,7 +16,7 @@ const db_config = require('./config');
 let db = mysql.createPool(db_config);
 
 
-currentVoting = 11;
+let currentVoting;
 
 
 const runQuery = (sql) => {
@@ -46,7 +46,7 @@ const getQuestions = async () => {
 
 const getQuestionByKey = async (key, value) => {
     return new Promise ( (resolve, reject) => {
-        const sql = `SELECT question_text FROM question WHERE ${key}="${value}"`;
+        const sql = `SELECT * FROM question WHERE ${key}="${value}"`;
         runQuery(sql).then( res =>  resolve(res)  );
     });
 };
@@ -78,7 +78,7 @@ const checkAuthenticated = (req, res, next) => {
 
 
 const checkAdmin= (req, res, next) => {
-    //if (!req.isAuthenticated() || req.user.admin !== 1){
+    //if (!req.isAuthenticated() || req.user.type !== 'admin'){
     //    return res.redirect('/'); 
     //}else  {
         return next();
@@ -105,6 +105,8 @@ app.set("view engine", "ejs");
 //Tell Express where we keep our index.ejs
 app.set("views", __dirname + "/views");
 
+// Specify static dir
+app.use( express.static( "public" ) );
 //Use body-parser
 app.use(bodyParser.urlencoded({ extended: false }));
 
@@ -119,7 +121,15 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 
-
+app.use((req, res, next) => {
+    const admin = req.user ? req.user.type === 'admin' : false;
+   res.locals = {
+       user : req.user,
+       isAuthenticated : req.isAuthenticated(),
+       isAdmin: admin
+   };
+   next();
+});
 
 
 
@@ -129,9 +139,13 @@ app.get("/", async (req, res) => {
 });
 
 app.get("/vote", checkAuthenticated, async (req, res) => {
-    const question = await getQuestionByKey( 'question_id', currentVoting );
-    const answers = await getAnswersByQuestionId(currentVoting).then ( (answers) => {return answers;});
-    res.render("vote", {question: question[0].question_text, question_id: currentVoting, answers : answers}); 
+    let question, question_text, answers;
+    if(currentVoting){
+        question = await getQuestionByKey( 'question_id', currentVoting );
+        question_text = question[0].question_text;
+        answers = await getAnswersByQuestionId(currentVoting).then ( (answers) => {return answers;});
+    }
+    res.render("vote", {question: question_text, question_id: currentVoting, answers : answers}); 
 });
 
 app.post("/vote", checkAuthenticated, async (req, res) => {
@@ -238,7 +252,7 @@ app.post("/login",checkNotAuthenticated, passport.authenticate('local', {
 }));
 
 
-app.post('/logout',checkAuthenticated, (req, res) => {
+app.get('/logout',checkAuthenticated, (req, res) => {
     req.logOut();
     res.redirect('/');
 });
@@ -257,9 +271,10 @@ app.get("/dashboard", checkAdmin, async (req, res) => {
     const sql = `SELECT * FROM voted WHERE question_id = "${currentVoting}"`;
     usersVoted = runQuery(sql);
 
-    Promise.all([usersVoted, getUsers()]).then( values => {
+    Promise.all([usersVoted, getUsers(), getQuestionByKey('question_id', currentVoting)]).then( values => {
         const votedUsers = values[0].map ( u => u.user_id );
-        res.render("dashboard", { questions : questionsWithAnswers, users: values[1], voted: votedUsers });
+        const currentQuestion = values[2][0];
+        res.render("dashboard", { currentQuestion: currentQuestion, questions : questionsWithAnswers, users: values[1], voted: votedUsers });
     }).catch( err => console.log(err));
 	} 
 );
@@ -267,21 +282,20 @@ app.get("/dashboard", checkAdmin, async (req, res) => {
 
 app.post("/addUser", checkAdmin, (req, res) => {
     const username = req.body.username;
+    const type = req.body.type;
     const code = uniqid();
-    const sql = `INSERT INTO user (username, code) VALUES ('${username}', '${code}')`;
-    db.query(sql, (err, result) => {
-        res.redirect('/dashboard');
-    });
+    const sql = `INSERT INTO user (username, code, type) VALUES ('${username}', '${code}', '${type}')`;
+    runQuery(sql);
+    res.redirect('/dashboard');
 });
 
 
 app.post("/editUser", checkAdmin, (req, res) => {
     const uid = req.body.user_id;
     const username = req.body.username;
-    const admin = req.body.username == 1 ? 1 : 0;
+    const type = req.body.type;
 
-    console.log(uid, username, admin);
-    const sql = `UPDATE user SET username = '${username}', admin = '${admin}' WHERE user_id = "${uid}"`;
+    const sql = `UPDATE user SET username = '${username}', type = '${type}' WHERE user_id = "${uid}"`;
     runQuery(sql).then( result => res.redirect("/dashboard"));
 });
 
@@ -301,7 +315,9 @@ app.post("/deleteUser", checkAdmin, async (req, res) => {
 
 app.post("/addQuestion", checkAdmin, async (req, res) => {
     const q= req.body.question;
+    const voters = req.body.voters;
     const qtype = req.body.questionType;
+
     let answers = [];
     switch (qtype){
     case('proposal'):
@@ -310,13 +326,15 @@ app.post("/addQuestion", checkAdmin, async (req, res) => {
     case('yes/no'):
         answers = ['yes', 'no'];
         break;
+    case('LGA_candidate'):
+        answers = ['blank', 'withdraw'];
+        break;
     }
 
-    const sql = `INSERT INTO question (question_text) VALUES ('${q}')`;
+    const sql = `INSERT INTO question (question_text, voters) VALUES ('${q}', '${voters}')`;
     const q_id = await runQuery(sql)
         .then( result => {return result.insertId;})
         .catch ( err => res.render("notification", {msg: {type:"error", text:err}} ));
-    console.log(answers);
     answers.forEach( answer => {
         let sql2 = `INSERT INTO answer (answer_text, question_id) VALUES ('${answer}', ${q_id})`;
         runQuery(sql2);
@@ -329,9 +347,10 @@ app.post("/addQuestion", checkAdmin, async (req, res) => {
 app.post("/editQuestion", checkAdmin, async (req, res) => {
     const qid = req.body.question_id;
     const qtext= req.body.qtext;
+    const voters = req.body.voters;
     const newAnswers = req.body.answers.split(',');
 
-    const sql = `UPDATE question SET question_text='${qtext}' WHERE question_id=${qid}`;
+    const sql = `UPDATE question SET question_text='${qtext}', voters='${voters}' WHERE question_id=${qid}`;
     runQuery(sql);
 
     const oldAnswers = await getAnswersByQuestionId(qid);
@@ -374,9 +393,7 @@ app.post("/updateShownQuestion", checkAdmin, async (req, res) => {
 
 
 app.post("/changeCurrentVoting", checkAdmin, (req, res) => {
-    console.log(currentVoting);
     currentVoting = req.body.currentVoting;
-    console.log(currentVoting);
     res.redirect("/dashboard");
 });
 
