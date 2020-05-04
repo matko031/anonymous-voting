@@ -397,7 +397,7 @@ app.post("/editQuestion", checkAdmin, async (req, res) => {
     const p2 = answersToAdd.map( a => {
         let sql = "INSERT INTO answer(answer_text, question_id) VALUES( ?, ?)";
         const sqlValues = [ a, qid];
-        return runQuery(sql);
+        return runQuery(sql, sqlValues);
     }); 
 
     Promise.all(p1+p2).then( result => res.redirect("/dashboard")).catch( err => console.log(err));
