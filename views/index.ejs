@@ -1,9 +1,10 @@
 <%- include('includes/header') %>
 <div class="container text-center">
-    <h1 class="mt-5"> Welcome to the voting app of Local Best Group Leuven! </h1>
-    <img src="img/BEST_Leuven.png">    
+    <h1 class="mt-5"> Welcome to the voting app of LBG Leuven! </h1>
+    <img src="img/BEST_Leuven_color.png">
+    <br>
     <% if (isAuthenticated ){ %>
-            <a href="/vote"><button class="btn btn-info btn-lg mt-5"> Vote </button> </a>
+            <a href="/vote"><button class="btn btn-info btn-lg"> Vote </button> </a>
         <% } else{ %>
             <br>
             <a href="/login"><button class="btn btn-info btn-lg mr-3"> Login </button> </a>

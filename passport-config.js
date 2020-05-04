@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 async function initializeStrategy(passport, getUserByKey) {
 	const authenticateUser = async (username, password, done) => {
         let user = await getUserByKey('username', username);
+        console.log(user);
         user = user[0];
         if (typeof user === 'undefined') { 
             return done(null, false, {message: "No user with that username"});

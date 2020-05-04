@@ -19,9 +19,9 @@ let db = mysql.createPool(db_config);
 let currentVoting;
 
 
-const runQuery = (sql) => {
+const runQuery = (sql, values) => {
     return new Promise( (resolve, reject) => {
-        db.query(sql, (err, res) => {
+        db.query(sql, values, (err, res) => {
             if (err) reject(err);
             else resolve (res);
         });
@@ -46,45 +46,37 @@ const getQuestions = async () => {
 
 const getQuestionByKey = async (key, value) => {
     return new Promise ( (resolve, reject) => {
-        const sql = `SELECT * FROM question WHERE ${key}="${value}"`;
-        runQuery(sql).then( res =>  resolve(res)  );
+        const sql = "SELECT * FROM question WHERE ??=?";
+        const sqlValues = [ key, value ];
+        runQuery(sql, sqlValues).then( res =>  resolve(res)  );
     });
 };
 
 
 const getAnswersByQuestionId = async (question_id) => {
     return new Promise ( (resolve, reject) => {
-        const sql = `SELECT answer_text, answer_id FROM answer WHERE question_id = ${question_id}`;
-        runQuery(sql).then( (res) => resolve(res) );
+        const sql = "SELECT answer_text, answer_id FROM answer WHERE question_id = ?";
+        const sqlValues = [ question_id ];
+        runQuery(sql, sqlValues).then( (res) => resolve(res) );
     });
 };
 
 const getUserByKey = async (key, value)=> {
     return new Promise ( (resolve, reject) => {
-        const sql = `SELECT * FROM user WHERE ${key}="${value}"`;
-        runQuery(sql).then( res =>  resolve(res) );
+        const sql = "SELECT * FROM user WHERE ?? = ? ";
+        const sqlValues = [ key, value ];
+        runQuery(sql, sqlValues).then( res =>  resolve(res) );
     });
 };
 
 
 const checkAuthenticated = (req, res, next) => {
-    //if (req.isAuthenticated()){
+    if (req.isAuthenticated()){
         return next();
-    //}else  {
-    //    return res.redirect('/'); 
-    //}
+    }else  {
+        return res.redirect('/'); 
+    }
 };
-
-
-
-const checkAdmin= (req, res, next) => {
-    //if (!req.isAuthenticated() || req.user.type !== 'admin'){
-    //    return res.redirect('/'); 
-    //}else  {
-        return next();
-   // }
-};
-
 
 
 const checkNotAuthenticated = (req, res, next) => {
@@ -95,6 +87,14 @@ const checkNotAuthenticated = (req, res, next) => {
     }
 };
 
+
+const checkAdmin= (req, res, next) => {
+    if (!req.isAuthenticated() || req.user.type !== 'admin'){
+        return res.redirect('/'); 
+    }else  {
+        return next();
+    }
+};
 
 initializePassport(passport, getUserByKey);
 
@@ -135,7 +135,7 @@ app.use((req, res, next) => {
 
 
 app.get("/", async (req, res) => { 
-    res.render("index", {isAuthenticated : req.isAuthenticated()});
+    res.render("index" );
 });
 
 app.get("/vote", checkAuthenticated, async (req, res) => {
@@ -151,36 +151,46 @@ app.get("/vote", checkAuthenticated, async (req, res) => {
 app.post("/vote", checkAuthenticated, async (req, res) => {
 	const code = req.body.code;
 	const vote = req.body.vote;
+    const user = req.user;
     const question_id = req.body.question_id;
 
     let sql;
+    let sqlValues;
     msg = {};
     
     if ( question_id != currentVoting){
         msg.text = "The voting position has changed after you have opened the voting page. Please go back to the homepage and vote again";
         msg.type = 'warning';
-    } else {
-        const user = await getUserByCode(code).then( (user) => {return user;});
-        if(user.length === 0){
-            msg.text = "The code you have typed does not exist";
+    } else{
+        const user_id = user.user_id; 
+        sql = "SELECT user_id FROM voted WHERE user_id= ? AND question_id= ?";
+        sqlValues = [user_id, question_id];
+        const userIdInVoted = await runQuery(sql, sqlValues);
+        
+        sql = "SELECT voters FROM question WHERE question_id= ?";
+        sqlValues = [question_id];
+        let voters = await runQuery(sql, sqlValues);
+        voters = voters[0].voters;
+
+
+        if (voters == 'full' && user.type != 'full' && user.type != 'admin'){
+            msg.text = "This voting is only for full members";
             msg.type = 'warning';
-
-        } else{
-            const user_id = user[0].user_id; 
-            sql = `SELECT user_id FROM voted WHERE user_id=${user_id} AND question_id=${currentVoting}`;
-            const userIdInVoted = await runQuery(sql).then( result => {return result;});
+        }else {
             if(userIdInVoted.length === 0){
-                sql = `INSERT INTO voted VALUES(${user_id}, ${currentVoting})`;
-                runQuery(sql).then( res => {});
-                sql = `INSERT INTO vote (answer_id) VALUES(${vote})`;
-                runQuery(sql).then( res => {});
-                res.render("done", {err: error});
-
-                msg.text = "Your vote has been submitted sucessfully";
-                msg.type = 'success';
-
+                sql = "INSERT INTO voted VALUES( ? , ? )";
+                sqlValues = [user_id, currentVoting];
+                const q1 = runQuery(sql, sqlValues);
+                sql = "INSERT INTO vote (answer_id) VALUES(?)";
+                sqlValues = [ vote ];
+                const q2 = runQuery(sql, sqlValues);
+                
+                await Promise.all( [q1, q2] ).then( values =>{
+                    msg.text = "Your vote has been submitted sucessfully";
+                    msg.type = 'success';
+                }).catch( err => msg = {text: "There has been an error while saving your vote in the database: "+ err, type:"error"});
             } else{
-                msg.text = "You have already votes for this question"; 
+                msg.text = "You have already voted on this question"; 
                 msg.type = 'warning';
             }
         }
@@ -189,20 +199,31 @@ app.post("/vote", checkAuthenticated, async (req, res) => {
 });
 
 
-app.get("/results", (req, res) => {
+app.get("/results", async (req, res) => {
     const sql = "SELECT question_text, answer_text, COUNT(*) AS votes FROM vote INNER JOIN answer ON vote.answer_id=answer.answer_id INNER JOIN question ON answer.question_id = question.question_id WHERE question.shown=1 GROUP BY vote.answer_id";
-    db.query(sql, (err, result) => {
-        if(err) console.log(err); 
-        let processed = 0;
-        voting_results = {};
-        result.forEach( elem =>{
-            if (! voting_results.hasOwnProperty(elem.question_text)){
-                voting_results[elem.question_text] = {}; 
-            }
-            voting_results[elem.question_text][elem.answer_text] = elem.votes;
-        });
-        res.render('results', {results: voting_results});
+    const results = await runQuery(sql);
+
+    const sql2 = "SELECT COUNT(*) as count FROM user WHERE type='full'";
+    let fullMembersCount = await runQuery(sql2);
+    fullMembersCount = fullMembersCount[0].count+1; // +1 because Matko is admin, but also a full member TODO: separate full/baby status and admin/normal status
+    voting_results = {};
+    results.forEach( elem =>{
+        if (! voting_results.hasOwnProperty(elem.question_text)){
+            voting_results[elem.question_text] = {votes: {}, result:""}; 
+        }
+        voting_results[elem.question_text]['votes'][elem.answer_text] = elem.votes;
     });
+    Object.values(voting_results).forEach ( q => {
+        let withdraw = q.votes.withdraw ? q.votes.withdraw : 0;
+        let votersCount = fullMembersCount - withdraw;
+
+        let maxKey = Object.keys(q.votes).sort(function (a, b) {
+          return q.votes[b] - q.votes[a];
+        })[0];
+        let maxVotes = q.votes[maxKey];
+        if ( maxVotes >fullMembersCount/2 ) q.result = maxKey;
+    });
+    res.render('results', {usersVoting: fullMembersCount, results: voting_results});
 });
 
 
@@ -219,14 +240,15 @@ app.post("/register", checkNotAuthenticated, async (req, res) => {
 
     const msg = {};
 
-    const user = await getUserByCode(code).then( (user) => {return user;});
+    const user = await getUserByKey('code', code).then( (user) => {return user;});
     if (user.length === 0){
         msg.text = "User with this code does not exist in the database";
         msg.type= "error";
     } else {
         const hashed_password = await bcrypt.hash(password, 10);
-        const sql = `UPDATE user SET password = '${hashed_password}' WHERE code='${code}'`; 
-        await runQuery(sql).then( result => {
+        const sql = "UPDATE user SET password = ? WHERE code= ? "; 
+        const sqlValues = [hashed_password, code];
+        await runQuery(sql, sqlValues).then( result => {
             msg.text = "Password has been setup succesfully";
             msg.type= "success";
         }).catch( err => {
@@ -268,8 +290,9 @@ app.get("/dashboard", checkAdmin, async (req, res) => {
             });
         }));
 
-    const sql = `SELECT * FROM voted WHERE question_id = "${currentVoting}"`;
-    usersVoted = runQuery(sql);
+    const sql = "SELECT * FROM voted WHERE question_id = ?";
+    const sqlValues = [ currentVoting ];
+    usersVoted = runQuery(sql, sqlValues);
 
     Promise.all([usersVoted, getUsers(), getQuestionByKey('question_id', currentVoting)]).then( values => {
         const votedUsers = values[0].map ( u => u.user_id );
@@ -284,8 +307,9 @@ app.post("/addUser", checkAdmin, (req, res) => {
     const username = req.body.username;
     const type = req.body.type;
     const code = uniqid();
-    const sql = `INSERT INTO user (username, code, type) VALUES ('${username}', '${code}', '${type}')`;
-    runQuery(sql);
+    const sql = "INSERT INTO user (username, code, type) VALUES (?, ?, ?)";
+    const sqlValues = [ username, code, type ];
+    runQuery(sql, sqlValues);
     res.redirect('/dashboard');
 });
 
@@ -295,8 +319,9 @@ app.post("/editUser", checkAdmin, (req, res) => {
     const username = req.body.username;
     const type = req.body.type;
 
-    const sql = `UPDATE user SET username = '${username}', type = '${type}' WHERE user_id = "${uid}"`;
-    runQuery(sql).then( result => res.redirect("/dashboard"));
+    const sql = "UPDATE user SET username = ?, type = ? WHERE user_id = ?";
+    const sqlValues = [ username, type, uid];
+    runQuery(sql, sqlValues).then( result => res.redirect("/dashboard"));
 });
 
 
@@ -305,8 +330,9 @@ app.post("/editUser", checkAdmin, (req, res) => {
 app.post("/deleteUser", checkAdmin, async (req, res) => {
     const uid = req.body.user_id;
 
-    const sql = `DELETE FROM user WHERE user_id='${uid}'`;
-    await runQuery(sql);
+    const sql = "DELETE FROM user WHERE user_id= ?";
+    const sqlValues = [ uid];
+    await runQuery(sql, sqlValues);
     res.status(204).send();
 });
 
@@ -331,13 +357,15 @@ app.post("/addQuestion", checkAdmin, async (req, res) => {
         break;
     }
 
-    const sql = `INSERT INTO question (question_text, voters) VALUES ('${q}', '${voters}')`;
-    const q_id = await runQuery(sql)
+    const sql = "INSERT INTO question (question_text, voters) VALUES (?, ?)";
+    const sqlValues = [ q, voters ];
+    const q_id = await runQuery(sql, sqlValues)
         .then( result => {return result.insertId;})
         .catch ( err => res.render("notification", {msg: {type:"error", text:err}} ));
     answers.forEach( answer => {
-        let sql2 = `INSERT INTO answer (answer_text, question_id) VALUES ('${answer}', ${q_id})`;
-        runQuery(sql2);
+        let sql2 = "INSERT INTO answer (answer_text, question_id) VALUES (?, ?)";
+        const sqlValues2 = [ answer, q_id];
+        runQuery(sql2, sqlValues2);
     });
     res.redirect('/dashboard');                    
 });
@@ -350,8 +378,9 @@ app.post("/editQuestion", checkAdmin, async (req, res) => {
     const voters = req.body.voters;
     const newAnswers = req.body.answers.split(',');
 
-    const sql = `UPDATE question SET question_text='${qtext}', voters='${voters}' WHERE question_id=${qid}`;
-    runQuery(sql);
+    const sql = "UPDATE question SET question_text=?, voters=? WHERE question_id=?";
+    const sqlValues = [ qtext, voters, qid];
+    runQuery(sql, sqlValues);
 
     const oldAnswers = await getAnswersByQuestionId(qid);
     const oldAnswersText = oldAnswers.map( oa => oa.answer_text );
@@ -360,12 +389,14 @@ app.post("/editQuestion", checkAdmin, async (req, res) => {
     const answersToAdd= newAnswers.filter ( na => ! oldAnswersText.includes(na) );
     
     const p1 = answersToDelete.map( a => {
-        let sql = `DELETE FROM answer WHERE answer_id='${a.answer_id}'`; 
-        return runQuery(sql);
+        let sql = "DELETE FROM answer WHERE answer_id= ? "; 
+        const sqlValues = [ a.answer_id ];
+        return runQuery(sql, sqlValues);
     }); 
 
     const p2 = answersToAdd.map( a => {
-        let sql = `INSERT INTO answer(answer_text, question_id) VALUES("${a}", "${qid}")`;
+        let sql = "INSERT INTO answer(answer_text, question_id) VALUES( ?, ?)";
+        const sqlValues = [ a, qid];
         return runQuery(sql);
     }); 
 
@@ -376,7 +407,8 @@ app.post("/editQuestion", checkAdmin, async (req, res) => {
 app.post("/deleteQuestion", checkAdmin, async (req, res) => {
     const qid = req.body.question_id;
 
-    const sql1 = `DELETE FROM question WHERE question_id='${qid}'`;
+    const sql1 = "DELETE FROM question WHERE question_id= ? ";
+    const sqlValues = [ qid ];
     await runQuery(sql1);
     res.status(204).send();
 });
@@ -385,7 +417,8 @@ app.post("/deleteQuestion", checkAdmin, async (req, res) => {
 app.post("/updateShownQuestion", checkAdmin, async (req, res) => {
     const qid = req.body.qid;
     const shown = req.body.shown;
-    const sql = `UPDATE question SET shown="${shown}" WHERE question_id = "${qid}"`;
+    const sql = "UPDATE question SET shown=? WHERE question_id = ?";
+    const sqlValues = [ shown, qid ];
     await runQuery(sql);
     res.status(204).send();
 });

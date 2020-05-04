@@ -1,17 +1,23 @@
 <%- include('includes/header') %>
+<% if( Object.keys(results).length > 0) { %>
+        <% Object.keys(results).forEach( (question) => { %>
 
-    <% Object.keys(results).forEach( (question) => { %>
-
-        <b>Question: </b>
-        <br>
-        <%= question %>
-        <br>
-        <% Object.keys(results[question]).forEach( (answer) => { %>
-            <%= answer %>: <%= results[question][answer] %>
+            <b>Question: </b>
             <br>
+            <%= question %>
+            <br>
+            <% Object.keys(results[question].votes).forEach( (answer) => { %>
+                <%= answer %>: <%= results[question]['votes'][answer] %>
+                <br>
 
-        <%});%>
-        <br>
-        <br>
-    <% });%>
-<%- include('includes/header') %>
+            <%});%>
+            <b> Number of users voting: </b> <%= usersVoting %> <br>
+            <b> Final winner: </b> <%= results[question]['result'] %>
+            <br>
+            <br>
+        <% });%>
+    <% } else { %>
+        <h3> There are currently no voting results </h3>
+
+    <% } %>
+<%- include('includes/footer') %>
