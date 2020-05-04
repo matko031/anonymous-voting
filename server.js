@@ -224,7 +224,6 @@ app.get("/results", async (req, res) => {
         let maxVotes = q.votes[maxKey];
         if ( maxVotes >fullMembersCount/2 ) q.result = maxKey;
     });
-    console.log(voting_results);
     res.render('results', {usersVoting: fullMembersCount, results: voting_results});
 });
 
