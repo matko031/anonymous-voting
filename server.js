@@ -202,6 +202,7 @@ app.post("/vote", checkAuthenticated, async (req, res) => {
 app.get("/results", async (req, res) => {
     const sql = "SELECT question_text, answer_text, COUNT(*) AS votes FROM vote INNER JOIN answer ON vote.answer_id=answer.answer_id INNER JOIN question ON answer.question_id = question.question_id WHERE question.shown=1 GROUP BY vote.answer_id";
     const results = await runQuery(sql);
+    console.log(results);
 
     const sql2 = "SELECT COUNT(*) as count FROM user WHERE type='full'";
     let fullMembersCount = await runQuery(sql2);
@@ -223,6 +224,7 @@ app.get("/results", async (req, res) => {
         let maxVotes = q.votes[maxKey];
         if ( maxVotes >fullMembersCount/2 ) q.result = maxKey;
     });
+    console.log(voting_results);
     res.render('results', {usersVoting: fullMembersCount, results: voting_results});
 });
 
@@ -419,7 +421,7 @@ app.post("/updateShownQuestion", checkAdmin, async (req, res) => {
     const shown = req.body.shown;
     const sql = "UPDATE question SET shown=? WHERE question_id = ?";
     const sqlValues = [ shown, qid ];
-    await runQuery(sql);
+    await runQuery(sql, sqlValues);
     res.status(204).send();
 });
 
