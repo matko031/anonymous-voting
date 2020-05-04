@@ -409,7 +409,7 @@ app.post("/deleteQuestion", checkAdmin, async (req, res) => {
 
     const sql1 = "DELETE FROM question WHERE question_id= ? ";
     const sqlValues = [ qid ];
-    await runQuery(sql1);
+    await runQuery(sql1, sqlValues);
     res.status(204).send();
 });
 
