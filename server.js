@@ -17,8 +17,9 @@ const db_config = require('./config');
 let db = mysql.createPool(db_config);
 
 
-let currentVoting;
+let currentVoting = 721;
 
+setTimeout( () => console.log("still alive"), 1000*60*20);
 
 const runQuery = (sql, values) => {
     return new Promise( (resolve, reject) => {

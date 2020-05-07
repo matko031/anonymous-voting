@@ -1,0 +1,20 @@
+{"v":0,"level":30,"name":"newrelic","hostname":"delimir","pid":5413,"time":"2020-05-07T21:23:17.772Z","msg":"Using New Relic for Node.js. Agent version: 6.6.0; Node version: v12.16.2."}
+{"v":0,"level":30,"name":"newrelic","hostname":"delimir","pid":5413,"time":"2020-05-07T21:23:17.892Z","msg":"Agent state changed from stopped to starting."}
+{"v":0,"level":30,"name":"newrelic","hostname":"delimir","pid":5413,"time":"2020-05-07T21:23:17.953Z","msg":"Starting New Relic for Node.js connection process."}
+{"v":0,"level":30,"name":"newrelic","hostname":"delimir","pid":5413,"time":"2020-05-07T21:23:17.953Z","msg":"Agent state changed from starting to connecting."}
+{"v":0,"level":30,"name":"newrelic","hostname":"delimir","pid":5413,"time":"2020-05-07T21:23:21.009Z","msg":"Agent state changed from connecting to connected."}
+{"v":0,"level":30,"name":"newrelic","hostname":"delimir","pid":5413,"time":"2020-05-07T21:23:21.010Z","msg":"Connected to collector-005.newrelic.com:443 with agent run ID Bcj7lgX_Dx7lAClx5xB50BhetHysAAgBAAAnIQEAABUlAgQQdvf4AwAFNi42LjAAB2RlbGltaXIADmFub255bW91c19wb2xs.","component":"collector_api"}
+{"v":0,"level":30,"name":"newrelic","hostname":"delimir","pid":5413,"time":"2020-05-07T21:23:21.010Z","msg":"Reporting to: https://rpm.newrelic.com/accounts/2716135/applications/276232184","component":"collector_api"}
+{"v":0,"level":30,"name":"newrelic","hostname":"delimir","pid":5413,"time":"2020-05-07T21:23:21.014Z","msg":"Valid event_harvest_config received. Updating harvest cycles. {\"report_period_ms\":5000,\"harvest_limits\":{\"error_event_data\":8,\"analytic_event_data\":833,\"custom_event_data\":83}}"}
+{"v":0,"level":30,"name":"newrelic","hostname":"delimir","pid":5413,"time":"2020-05-07T21:23:21.021Z","msg":"Agent state changed from connected to started."}
+{"v":0,"level":30,"name":"newrelic","hostname":"delimir","pid":5413,"time":"2020-05-07T21:23:22.022Z","msg":"Starting initial 1000ms harvest."}
+{"v":0,"level":30,"name":"newrelic","hostname":"delimir","pid":7623,"time":"2020-05-07T21:24:10.219Z","msg":"Using New Relic for Node.js. Agent version: 6.6.0; Node version: v12.16.2."}
+{"v":0,"level":30,"name":"newrelic","hostname":"delimir","pid":7623,"time":"2020-05-07T21:24:10.332Z","msg":"Agent state changed from stopped to starting."}
+{"v":0,"level":30,"name":"newrelic","hostname":"delimir","pid":7623,"time":"2020-05-07T21:24:10.396Z","msg":"Starting New Relic for Node.js connection process."}
+{"v":0,"level":30,"name":"newrelic","hostname":"delimir","pid":7623,"time":"2020-05-07T21:24:10.396Z","msg":"Agent state changed from starting to connecting."}
+{"v":0,"level":30,"name":"newrelic","hostname":"delimir","pid":7623,"time":"2020-05-07T21:24:13.407Z","msg":"Agent state changed from connecting to connected."}
+{"v":0,"level":30,"name":"newrelic","hostname":"delimir","pid":7623,"time":"2020-05-07T21:24:13.408Z","msg":"Connected to collector-005.newrelic.com:443 with agent run ID BYCNVyzG7ijdAClx5xB50BhetHzoAAgBAAAnIQEAAB3HAgQQdvf4AwAFNi42LjAAB2RlbGltaXIADmFub255bW91c19wb2xs.","component":"collector_api"}
+{"v":0,"level":30,"name":"newrelic","hostname":"delimir","pid":7623,"time":"2020-05-07T21:24:13.408Z","msg":"Reporting to: https://rpm.newrelic.com/accounts/2716135/applications/276232184","component":"collector_api"}
+{"v":0,"level":30,"name":"newrelic","hostname":"delimir","pid":7623,"time":"2020-05-07T21:24:13.410Z","msg":"Valid event_harvest_config received. Updating harvest cycles. {\"report_period_ms\":5000,\"harvest_limits\":{\"error_event_data\":8,\"analytic_event_data\":833,\"custom_event_data\":83}}"}
+{"v":0,"level":30,"name":"newrelic","hostname":"delimir","pid":7623,"time":"2020-05-07T21:24:13.412Z","msg":"Agent state changed from connected to started."}
+{"v":0,"level":30,"name":"newrelic","hostname":"delimir","pid":7623,"time":"2020-05-07T21:24:14.412Z","msg":"Starting initial 1000ms harvest."}
