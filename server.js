@@ -1,3 +1,4 @@
+require('newrelic');
 const uniqid = require('uniqid');
 const session = require("express-session");
 const express= require("express");
