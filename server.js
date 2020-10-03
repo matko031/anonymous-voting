@@ -17,7 +17,7 @@ const db_config = require('./config');
 let db = mysql.createPool(db_config);
 
 
-let currentVoting = 971;
+let currentVoting = 981;
 
 setTimeout( () => console.log("still alive"), 1000*60*20);
 
